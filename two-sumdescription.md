@@ -1,62 +1,65 @@
-# Optimal Solution for Two Sum: A Hash Map Approach
+# Two Sum: The O(N log N) Map-Based Solution
 
 ## Intuition
-The core idea is to efficiently find the "complement" for each number in the array. If we are looking for two numbers `x` and `y` such that `x + y = target`, then for any given number `x` from the array, its complement `y` must be `target - x`.
+The problem asks us to find two numbers in an array that sum up to a specific `target` value and return their indices. A brute-force approach would involve checking every possible pair, leading to an O(N^2) time complexity. We want something faster.
 
-A naive approach would be to check every possible pair, which is `O(N^2)`. To do better, we need a way to quickly check if `target - x` exists in the array and what its index is. A hash map (like `std::map` or `std::unordered_map` in C++) is perfect for this! We can store numbers as keys and their indices as values. This allows us to look up a complement in nearly constant time (average `O(1)` for `unordered_map`, `O(log N)` for `map`).
+The core idea is to efficiently check if the "complement" of a number (i.e., `target - current_number`) has been seen before. If we iterate through the array, for each `nums[i]`, we can calculate its `complement = target - nums[i]`. If this `complement` already exists in a data structure that allows fast lookups, we've found our pair! A hash map (or `std::map` in C++) is perfect for this, as it allows us to store numbers along with their indices and retrieve them quickly.
 
 ## ⚡ Approach
-We'll use a `std::map<int, int>` to store `(number, index)` pairs as we iterate through the `nums` array.
+The provided solution uses a `std::map<int, int>` to store the numbers encountered so far along with their respective indices. Here's a step-by-step breakdown:
 
-1.  **Initialize:** Create an empty `std::vector<int>` called `vec` to store our result indices and an empty `std::map<int, int>` called `m`.
-2.  **Handle First Element:** The provided code starts by adding the first element `nums[0]` and its index `0` to the map: `m[nums[0]] = 0;`. This initializes the map with a known value.
-3.  **Iterate and Search:** Loop through the `nums` array starting from the second element (index `i = 1`) up to the end.
-    a.  **Calculate Complement:** For the current number `nums[i]`, calculate the `complement` needed: `complement = target - nums[i]`.
-    b.  **Check for Complement:** We need to see if this `complement` already exists in our map `m`. The condition in the code is:
-        `if ((nums[0]) == (target - nums[i]) || (m[target - nums[i]] != 0))`
-        *   The first part, `(nums[0]) == (target - nums[i])`, specifically checks if the current `nums[i]` forms the sum with the very first element `nums[0]`. This is important because `m[nums[0]]` would correctly return `0`, but the second part of the condition `(m[target - nums[i]] != 0)` would evaluate to `(0 != 0)` which is `false`. So, this explicitly handles the `nums[0]` case.
-        *   The second part, `(m[target - nums[i]] != 0)`, checks if the `complement` exists in the map and its associated index is not `0`. If `target - nums[i]` is not in the map, accessing `m[target - nums[i]]` will insert it with a default value of `0`, making `(0 != 0)` false. If it *is* in the map with a non-zero index, this condition will be true.
-    c.  **Found Solution:** If either of the above conditions is true (meaning the complement is found):
-        *   Add the index of the `complement` (which is `m[target - nums[i]]`) to `vec`.
-        *   Add the current index `i` to `vec`.
-        *   Since the problem guarantees exactly one solution, we can `break` the loop immediately.
-    d.  **Not Found:** If the complement is not found (both conditions are false):
-        *   Add the current number `nums[i]` and its index `i` to the map: `m[nums[i]] = i;`. This makes `nums[i]` available as a complement for subsequent numbers.
-4.  **Return Result:** After the loop, `vec` will contain the indices of the two numbers that sum up to `target`. Return `vec`.
+1.  **Initialize Map**: Create an empty `std::map<int, int>` called `m`. This map will store `(number, index)` pairs.
+2.  **Handle First Element**: The code starts by placing the first element `nums[0]` and its index `0` into the map: `m[nums[0]] = 0;`. This ensures `nums[0]` is available for lookup.
+3.  **Iterate and Check**: Loop through the `nums` array starting from the second element (index `i = 1`) up to the end.
+    *   For each `nums[i]` at the current index `i`:
+        *   **Calculate Complement**: Determine the `complement` needed to reach the `target`: `complement = target - nums[i]`.
+        *   **Check for Complement**: The solution's critical check is: `if ((nums[0]) == (target - nums[i]) || (m[target - nums[i]] != 0))`
+            *   Let's break this down:
+                *   `nums[0] == (target - nums[i])`: This part specifically checks if the current `nums[i]` forms a pair with the very first element `nums[0]`. This is important because `nums[0]`'s index is `0`.
+                *   `m[target - nums[i]] != 0`: This part checks if the `complement` exists in the map and its stored index is **not** `0`. In C++'s `std::map`, accessing a key with `[]` that doesn't exist will insert it with a default-constructed value (which is `0` for `int`). So, if the complement was `nums[0]` (whose index is `0`), `m[complement]` would be `0`, and this condition `0 != 0` would be false. The first part of the `||` condition (`nums[0] == complement`) covers this specific case for `nums[0]`.
+            *   If either of these conditions is true, it means we've found the `complement`!
+        *   **Found Pair**: If the complement is found:
+            *   Retrieve its index from the map: `m[complement]`.
+            *   Add this index and the current index `i` to the result vector `vec`.
+            *   Since the problem guarantees exactly one solution, we can `break` the loop and return `vec`.
+        *   **Not Found**: If the complement is not found in the map (or its index was `0` and `nums[0]` wasn't the complement), add the current number `nums[i]` and its index `i` to the map: `m[nums[i]] = i;`. This makes `nums[i]` available for future lookups.
+4.  **Return Result**: The function returns the `vec` containing the two indices.
 
 ## Dry Run
-Let's trace `nums = [3, 2, 4], target = 6`
+Let's trace with `nums = [3, 2, 4]`, `target = 6`.
 
-1.  Initialize `vec = []`, `m = {}`.
-2.  `m[nums[0]] = 0;` => `m = {3: 0}`.
-3.  Start loop from `i = 1`:
-    *   **`i = 1`**: `nums[i] = 2`
-        *   `complement = target - nums[i] = 6 - 2 = 4`.
-        *   Check condition: `((nums[0] == complement) || (m[complement] != 0))`
-            *   `(3 == 4)` is `false`.
-            *   `m[4]` is accessed. Since `4` is not in `m`, it's inserted as `4:0`. `m` becomes `{3:0, 4:0}`. The expression `m[4]` evaluates to `0`. So `(0 != 0)` is `false`.
-            *   Both parts of the `||` are `false`.
-        *   `else` block executes: `m[nums[i]] = i` => `m[2] = 1`. `m` is now `{3:0, 4:0, 2:1}`.
-    *   **`i = 2`**: `nums[i] = 4`
-        *   `complement = target - nums[i] = 6 - 4 = 2`.
-        *   Check condition: `((nums[0] == complement) || (m[complement] != 0))`
-            *   `(3 == 2)` is `false`.
-            *   `m[2]` is accessed. `2` is in `m`, its value is `1`. So `m[2]` evaluates to `1`. `(1 != 0)` is `true`.
-            *   The second part of the `||` is `true`, so the entire condition is `true`.
-        *   Solution found!
-        *   `vec.push_back(m[complement])` => `vec.push_back(m[2])` => `vec.push_back(1)`. `vec = [1]`.
-        *   `vec.push_back(i)` => `vec.push_back(2)`. `vec = [1, 2]`.
-        *   `break` the loop.
-4.  Return `vec = [1, 2]`. This matches the expected output.
+1.  Initialize `vec` (empty), `m` (empty).
+2.  `m[nums[0]] = 0;` becomes `m = {3: 0}`.
+3.  Loop starts from `i = 1`:
+    *   **`i = 1`**: `nums[1] = 2`.
+        *   `complement = target - nums[1] = 6 - 2 = 4`.
+        *   Check condition: `(nums[0] == complement || m[complement] != 0)`
+            *   `nums[0] == complement` is `(3 == 4)`, which is `false`.
+            *   `m[4]` is not in map. Accessing `m[4]` inserts `4` with value `0`. So, `m[4] != 0` is `(0 != 0)`, which is `false`.
+            *   Overall condition `(false || false)` is `false`.
+        *   `else` block: `m[nums[1]] = 1;` becomes `m[2] = 1`.
+        *   `m` is now `{3: 0, 2: 1}`.
+    *   **`i = 2`**: `nums[2] = 4`.
+        *   `complement = target - nums[2] = 6 - 4 = 2`.
+        *   Check condition: `(nums[0] == complement || m[complement] != 0)`
+            *   `nums[0] == complement` is `(3 == 2)`, which is `false`.
+            *   `m[2]` is in map, its value is `1`. So, `m[2] != 0` is `(1 != 0)`, which is `true`.
+            *   Overall condition `(false || true)` is `true`.
+        *   `if` block:
+            *   `vec.push_back(m[complement]);` -> `vec.push_back(m[2]);` -> `vec.push_back(1);`. `vec = [1]`.
+            *   `vec.push_back(i);` -> `vec.push_back(2);`. `vec = [1, 2]`.
+            *   `break;`
+4.  Return `vec`, which is `[1, 2]`. This is correct!
 
 ## ⏱ Complexity
-*   **Time Complexity:** `O(N log N)`
-    *   We iterate through the `nums` array once (N elements).
-    *   Inside the loop, `std::map` operations (insertion and lookup) take `O(log K)` time, where `K` is the number of elements currently in the map. In the worst case, `K` can be up to `N`.
-    *   Therefore, the total time complexity is `O(N log N)`.
-    *   If `std::unordered_map` was used instead, the average time complexity would be `O(N)`.
-*   **Space Complexity:** `O(N)`
-    *   In the worst case, we might store all `N` elements of the `nums` array in the map before finding the desired pair. Each map entry stores an integer key and an integer value.
+*   **Time Complexity**: O(N log N)
+    *   The loop iterates up to `N-1` times, where `N` is the number of elements in `nums`.
+    *   Inside the loop, `std::map` operations (insertion `m[key] = value` and lookup `m[key]` or `m.count(key)`) take O(log N) time on average for a balanced binary search tree (which `std::map` is).
+    *   Therefore, the total time complexity is O(N log N).
+    *   *Note*: If `std::unordered_map` (a hash map) were used instead, the average time complexity would be O(N) because hash map operations take O(1) time on average.
+*   **Space Complexity**: O(N)
+    *   In the worst case, the `std::map` stores up to `N-1` elements (if the solution pair is found only at the very end).
+    *   Therefore, the space complexity is proportional to the number of elements stored in the map.
 
 ## Code
 ```cpp
@@ -64,34 +67,26 @@ class Solution {
 public:
     vector<int> twoSum(vector<int>& nums, int target) {
         vector<int> vec;
-        // int f=0; // This variable is unused and can be removed.
-        map<int, int> m; // Using std::map for (number -> index) mapping
+        // int f=0; // This variable is unused and can be removed for cleaner code.
+        map<int, int> m; // Using std::map (balanced binary search tree)
 
-        // Initialize the map with the first element and its index
-        // This is crucial for the specific logic in the loop's condition
-        m[nums[0]] = 0; 
+        // Store the first element and its index
+        m[nums[0]] = 0;
 
-        // Iterate through the array starting from the second element
-        for(int i = 1; i < nums.size(); i++) {
-            // Calculate the complement needed to reach the target
+        // Iterate from the second element
+        for(int i=1; i<nums.size(); i++){
             int complement = target - nums[i];
 
-            // Check if the complement exists in the map
-            // The condition handles two cases:
-            // 1. If the complement is nums[0] (which has index 0).
-            //    This is needed because m[complement] for index 0 would return 0,
-            //    making the (m[complement] != 0) part false.
-            // 2. If the complement exists in the map and its index is not 0.
-            //    If complement is not in map, m[complement] will insert it with 0,
-            //    making (m[complement] != 0) false.
-            if ((nums[0] == complement) || (m[complement] != 0)) {
-                // Complement found! Add its index and the current index to the result vector
-                vec.push_back(m[complement]);
-                vec.push_back(i);
-                break; // Exactly one solution, so we can stop
+            // Check if the complement exists in the map.
+            // The condition (nums[0] == complement) handles the case where nums[0] is the complement
+            // and its index (0) would make m[complement] != 0 evaluate to false.
+            // The (m[complement] != 0) part checks if the complement exists and its index is not 0.
+            if((nums[0]) == (complement) || (m[complement] != 0)){
+                vec.push_back(m[complement]); // Add the index of the complement
+                vec.push_back(i);             // Add the current index
+                break; // Found the solution, exit loop
             } else {
-                // Complement not found yet, add the current number to the map
-                // for future lookups
+                // If complement not found, add the current number and its index to the map
                 m[nums[i]] = i;
             }
         }
@@ -101,10 +96,11 @@ public:
 ```
 
 ## Edge Cases
-The problem statement provides helpful constraints that simplify edge case handling:
-*   `2 <= nums.length <= 10^4`: The input array will always have at least two elements, so we don't need to worry about empty arrays or single-element arrays.
-*   `Only one valid answer exists.`: We are guaranteed to find a pair, so we don't need to handle cases where no solution exists.
-*   `You may not use the same element twice.`: This means if `nums = [3, 2, 3]` and `target = 6`, we should use `nums[0]` and `nums[2]`, not `nums[0]` twice. Our hash map approach correctly handles this by storing indices, ensuring we pick two distinct positions.
-*   **Values and Target:** `nums[i]` and `target` can be negative, zero, or positive, which the map approach handles naturally. For example, `nums = [0, 1], target = 1` or `nums = [-1, -2], target = -3` work correctly.
-
-The specific implementation detail regarding `m[key] != 0` check combined with `(nums[0] == target - nums[i])` is a way to handle the "edge case" where the index of a complement happens to be `0`. A more robust way to check for existence in `std::map` without potentially inserting an element would be `m.count(complement)` or `m.find(complement) != m.end()`. However, the provided code's logic correctly navigates this for the given problem constraints.
+*   **Smallest Input Size**: The constraints state `2 <= nums.length`. The code correctly handles an array of two elements. For `nums = [x, y], target = x+y`, the first element `x` is put into the map with index 0. Then for `y` at index 1, `complement = target - y = x`. The condition `nums[0] == complement` becomes `x == x`, which is true. It correctly returns `[0, 1]`.
+*   **Negative Numbers**: `nums` elements and `target` can be negative. The arithmetic `target - nums[i]` and map operations work correctly with negative values.
+*   **Duplicate Numbers**: The problem states "you may not use the same element twice", which implies *indices* must be distinct. If `nums = [3, 3], target = 6`, the code handles this:
+    *   `m[3] = 0`.
+    *   For `i=1, nums[1]=3`, `complement = 3`.
+    *   `nums[0] == complement` (`3 == 3`) is true.
+    *   Returns `[m[3], 1]` which is `[0, 1]`. This is correct as `nums[0]` and `nums[1]` are at different indices.
+*   **Target is Zero**: If `nums = [0, 0], target = 0`, the logic holds. `m[0]=0`. For `i=1, nums[1]=0`, `complement=0`. `nums[0]==complement` is true. Returns `[0, 1]`.
